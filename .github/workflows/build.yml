@@ -1,0 +1,135 @@
+name: Build VST3 Plugin
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  JUCE_VERSION: 8.0.10
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Cache JUCE
+      id: cache-juce
+      uses: actions/cache@v4
+      with:
+        path: JUCE
+        key: JUCE-${{ env.JUCE_VERSION }}
+
+    - name: Download JUCE
+      if: steps.cache-juce.outputs.cache-hit != 'true'
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/juce-framework/JUCE/releases/download/${{ env.JUCE_VERSION }}/juce-${{ env.JUCE_VERSION }}-windows.zip" -OutFile juce.zip
+        Expand-Archive -Path juce.zip -DestinationPath .
+        Move-Item -Path "juce-${{ env.JUCE_VERSION }}-windows/JUCE" -Destination "JUCE"
+
+    - name: Configure CMake
+      run: cmake -G "Visual Studio 17 2022" -A x64 -DJUCE_DIR="${{ github.workspace }}/JUCE" -B build
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VST3-Windows
+        path: build/*_artefacts/Release/VST3/*.vst3
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Cache JUCE
+      id: cache-juce
+      uses: actions/cache@v4
+      with:
+        path: JUCE
+        key: JUCE-${{ env.JUCE_VERSION }}
+
+    - name: Download JUCE
+      if: steps.cache-juce.outputs.cache-hit != 'true'
+      run: |
+        curl -L -o juce.zip "https://github.com/juce-framework/JUCE/releases/download/${{ env.JUCE_VERSION }}/juce-${{ env.JUCE_VERSION }}-osx.zip"
+        unzip juce.zip
+        mv "juce-${{ env.JUCE_VERSION }}-osx/JUCE" JUCE
+
+    - name: Configure CMake
+      run: cmake -DJUCE_DIR="${{ github.workspace }}/JUCE" -DCMAKE_BUILD_TYPE=Release -B build
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VST3-macOS
+        path: build/*_artefacts/Release/VST3/*.vst3
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libasound2-dev \
+          libjack-dev \
+          libcurl4-openssl-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libwebkit2gtk-4.0-dev \
+          libglu1-mesa-dev \
+          mesa-common-dev
+
+    - name: Cache JUCE
+      id: cache-juce
+      uses: actions/cache@v4
+      with:
+        path: JUCE
+        key: JUCE-${{ env.JUCE_VERSION }}
+
+    - name: Download JUCE
+      if: steps.cache-juce.outputs.cache-hit != 'true'
+      run: |
+        wget "https://github.com/juce-framework/JUCE/releases/download/${{ env.JUCE_VERSION }}/juce-${{ env.JUCE_VERSION }}-linux.zip"
+        unzip "juce-${{ env.JUCE_VERSION }}-linux.zip"
+        mv "juce-${{ env.JUCE_VERSION }}-linux/JUCE" JUCE
+
+    - name: Configure CMake
+      run: cmake -DJUCE_DIR="${{ github.workspace }}/JUCE" -DCMAKE_BUILD_TYPE=Release -B build
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: VST3-Linux
+        path: build/*_artefacts/Release/VST3/*.vst3
