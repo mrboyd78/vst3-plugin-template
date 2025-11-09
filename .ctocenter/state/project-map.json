@@ -1,0 +1,129 @@
+{
+  "timestamp": "2025-11-09T09:41:36.981Z",
+  "repository": {
+    "name": "vst3-plugin-template",
+    "type": "audio-plugin",
+    "framework": "JUCE 8",
+    "language": "C++17",
+    "build_system": "CMake"
+  },
+  "structure": {
+    "root": {
+      "type": "monorepo-single",
+      "description": "Single VST3 plugin template project"
+    },
+    "directories": {
+      "source": {
+        "path": "source/",
+        "type": "implementation",
+        "files": [
+          "PluginProcessor.cpp",
+          "PluginEditor.cpp"
+        ],
+        "purpose": "Main plugin implementation files"
+      },
+      "include": {
+        "path": "include/",
+        "type": "headers",
+        "files": [
+          "PluginProcessor.h",
+          "PluginEditor.h"
+        ],
+        "purpose": "Public header files"
+      },
+      "docs": {
+        "path": "docs/",
+        "type": "documentation",
+        "files": [
+          "DEVELOPMENT.md",
+          "REFERENCE.md",
+          "USER_MANUAL.md"
+        ],
+        "purpose": "User and developer documentation"
+      },
+      ".github": {
+        "path": ".github/",
+        "type": "ci-cd",
+        "subdirs": ["workflows"],
+        "purpose": "GitHub Actions CI/CD configuration"
+      },
+      ".ctocenter": {
+        "path": ".ctocenter/",
+        "type": "governance",
+        "purpose": "CTO Command Center for operational excellence"
+      }
+    }
+  },
+  "package_manager": {
+    "type": "cmake",
+    "config_file": "CMakeLists.txt",
+    "version": "3.22+"
+  },
+  "dependencies": {
+    "external": [
+      {
+        "name": "JUCE",
+        "version": "8.x",
+        "type": "framework",
+        "modules": [
+          "juce_audio_utils",
+          "juce_dsp"
+        ]
+      }
+    ],
+    "build_tools": [
+      {
+        "name": "CMake",
+        "version": "3.22+",
+        "required": true
+      }
+    ]
+  },
+  "build": {
+    "output_formats": ["VST3"],
+    "targets": {
+      "plugin": {
+        "name": "MyVST3Plugin",
+        "version": "1.0.0",
+        "type": "audio_effect"
+      }
+    }
+  },
+  "apis": {
+    "public": {
+      "PluginProcessor": {
+        "type": "class",
+        "file": "include/PluginProcessor.h",
+        "purpose": "Main audio processing interface"
+      },
+      "PluginEditor": {
+        "type": "class",
+        "file": "include/PluginEditor.h",
+        "purpose": "GUI editor interface"
+      }
+    }
+  },
+  "documentation": {
+    "readme": "README.md",
+    "quickstart": "QUICKSTART.md",
+    "development": "docs/DEVELOPMENT.md",
+    "reference": "docs/REFERENCE.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "ci_cd": {
+    "platform": "github_actions",
+    "workflows": [
+      {
+        "name": "build",
+        "file": ".github/workflows/build.yml",
+        "triggers": ["push", "pull_request"]
+      }
+    ]
+  },
+  "governance": {
+    "playbooks": [],
+    "runbooks": [],
+    "adrs": [],
+    "postmortems": []
+  }
+}

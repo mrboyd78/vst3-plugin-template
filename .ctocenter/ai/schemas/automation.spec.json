@@ -1,0 +1,380 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mrboyd78/vst3-plugin-template/.ctocenter/schemas/automation.spec.json",
+  "title": "Automation Specification",
+  "description": "Schema for automated operational procedures, runbooks, and deployment automations",
+  "type": "object",
+  "required": ["name", "type", "trigger", "steps"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique name for this automation",
+      "minLength": 5,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "description": "What this automation does and when to use it",
+      "minLength": 20,
+      "maxLength": 500
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of automation",
+      "enum": ["incident-response", "deployment", "maintenance", "monitoring", "testing", "backup", "recovery"]
+    },
+    "severity": {
+      "type": "string",
+      "description": "Severity/criticality of the automated procedure",
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "trigger": {
+      "type": "object",
+      "description": "What triggers this automation",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["manual", "scheduled", "event", "alert", "webhook"],
+          "description": "How this automation is triggered"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Specific condition or event that triggers automation",
+          "maxLength": 500
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Cron expression for scheduled triggers",
+          "pattern": "^(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\\d+(ns|us|µs|ms|s|m|h))+)|((((\\d+,)+\\d+|(\\d+(\\/|-)\\d+)|\\d+|\\*) ?){5,7})$"
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "description": "Requirements before running automation",
+      "items": {
+        "type": "object",
+        "required": ["check", "description"],
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Name of the prerequisite check"
+          },
+          "description": {
+            "type": "string",
+            "description": "What is being checked"
+          },
+          "command": {
+            "type": "string",
+            "description": "Optional command to verify prerequisite"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this prerequisite is mandatory",
+            "default": true
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "Sequential steps of the automation",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["name", "action"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Step name/description",
+            "minLength": 5,
+            "maxLength": 200
+          },
+          "action": {
+            "type": "string",
+            "description": "What this step does",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "command": {
+            "type": "string",
+            "description": "Executable command or script",
+            "maxLength": 2000
+          },
+          "validation": {
+            "type": "string",
+            "description": "How to verify this step succeeded",
+            "maxLength": 500
+          },
+          "expected_output": {
+            "type": "string",
+            "description": "Expected result or output",
+            "maxLength": 500
+          },
+          "on_failure": {
+            "type": "string",
+            "description": "What to do if this step fails",
+            "enum": ["continue", "retry", "rollback", "stop", "escalate"]
+          },
+          "retry_count": {
+            "type": "integer",
+            "description": "Number of times to retry on failure",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 0
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "description": "Maximum time to wait for step completion",
+            "minimum": 1,
+            "maximum": 7200
+          },
+          "parallel": {
+            "type": "boolean",
+            "description": "Whether this step can run in parallel with others",
+            "default": false
+          }
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "description": "Rollback procedure if automation fails",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether rollback is available",
+          "default": true
+        },
+        "steps": {
+          "type": "array",
+          "description": "Steps to rollback changes",
+          "items": {
+            "type": "object",
+            "required": ["name", "action"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Rollback step name"
+              },
+              "action": {
+                "type": "string",
+                "description": "Rollback action description"
+              },
+              "command": {
+                "type": "string",
+                "description": "Rollback command"
+              }
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "description": "How to verify the automation succeeded",
+      "properties": {
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "method"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Verification check name"
+              },
+              "method": {
+                "type": "string",
+                "description": "How to perform verification"
+              },
+              "command": {
+                "type": "string",
+                "description": "Verification command"
+              },
+              "expected": {
+                "type": "string",
+                "description": "Expected result"
+              }
+            }
+          }
+        }
+      }
+    },
+    "notification": {
+      "type": "object",
+      "description": "Notification settings for automation events",
+      "properties": {
+        "on_start": {
+          "type": "array",
+          "description": "Notify on automation start",
+          "items": {
+            "type": "string",
+            "description": "Notification channel (slack, email, etc.)"
+          }
+        },
+        "on_success": {
+          "type": "array",
+          "description": "Notify on successful completion",
+          "items": {
+            "type": "string"
+          }
+        },
+        "on_failure": {
+          "type": "array",
+          "description": "Notify on failure",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "description": "Escalation procedures",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that trigger escalation",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contacts": {
+          "type": "array",
+          "description": "Who to contact",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "contact": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Team or person responsible"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "description": "Automation version",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "related_runbook": {
+          "type": "string",
+          "description": "Path to related runbook"
+        },
+        "related_adr": {
+          "type": "string",
+          "description": "Path to related ADR"
+        }
+      }
+    },
+    "testing": {
+      "type": "object",
+      "description": "Testing information for this automation",
+      "properties": {
+        "last_tested": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When automation was last tested"
+        },
+        "test_environment": {
+          "type": "string",
+          "description": "Where to safely test this automation"
+        },
+        "test_data": {
+          "type": "string",
+          "description": "Test data or scenarios"
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "name": "deploy-plugin-release",
+      "description": "Automated deployment of new plugin release to distribution channels",
+      "type": "deployment",
+      "severity": "P1",
+      "trigger": {
+        "type": "manual",
+        "condition": "New version tag pushed to main branch"
+      },
+      "prerequisites": [
+        {
+          "check": "version-bumped",
+          "description": "Version number updated in CMakeLists.txt",
+          "required": true
+        },
+        {
+          "check": "tests-passing",
+          "description": "All CI tests passing",
+          "command": "gh workflow list --json state",
+          "required": true
+        }
+      ],
+      "steps": [
+        {
+          "name": "Build release artifacts",
+          "action": "Compile plugin in Release configuration for all platforms",
+          "command": "cmake --build build --config Release",
+          "validation": "Check that .vst3 files exist in build output",
+          "on_failure": "stop",
+          "timeout_seconds": 600
+        },
+        {
+          "name": "Sign binaries",
+          "action": "Code sign plugin binaries for distribution",
+          "command": "./scripts/sign-plugin.sh",
+          "validation": "Verify signatures",
+          "on_failure": "stop"
+        }
+      ],
+      "rollback": {
+        "enabled": true,
+        "steps": [
+          {
+            "name": "Revert tag",
+            "action": "Delete release tag if deployment fails",
+            "command": "git tag -d v${VERSION} && git push origin :refs/tags/v${VERSION}"
+          }
+        ]
+      },
+      "metadata": {
+        "owner": "Release Engineering",
+        "version": "1.0.0",
+        "tags": ["deployment", "release", "automation"]
+      }
+    }
+  ]
+}

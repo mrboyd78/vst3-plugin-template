@@ -1,0 +1,221 @@
+{
+  "name": "plugin-build-and-deploy",
+  "description": "Automated build, test, and deployment of VST3 plugin releases across all platforms",
+  "type": "deployment",
+  "severity": "P1",
+  "trigger": {
+    "type": "manual",
+    "condition": "Release tag pushed to repository (format: v*.*.*)"
+  },
+  "prerequisites": [
+    {
+      "check": "version-updated",
+      "description": "Version number in CMakeLists.txt matches release tag",
+      "command": "grep 'PLUGIN_VERSION' CMakeLists.txt | grep -q $(git describe --tags)",
+      "required": true
+    },
+    {
+      "check": "ci-passing",
+      "description": "All CI checks passing on main branch",
+      "command": "gh workflow list --json name,state,conclusion",
+      "required": true
+    },
+    {
+      "check": "changelog-updated",
+      "description": "CHANGELOG.md updated with release notes",
+      "required": true
+    },
+    {
+      "check": "signing-keys-available",
+      "description": "Code signing certificates available in environment",
+      "command": "test -f ~/.ssh/codesign.key",
+      "required": false
+    }
+  ],
+  "steps": [
+    {
+      "name": "Validate release tag",
+      "action": "Verify release tag format and ensure it matches semantic versioning",
+      "command": "git describe --tags --exact-match HEAD && [[ $(git describe --tags) =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]",
+      "validation": "Tag matches format vX.Y.Z",
+      "expected_output": "Tag name like v1.2.3",
+      "on_failure": "stop",
+      "timeout_seconds": 10
+    },
+    {
+      "name": "Build Windows release",
+      "action": "Build plugin for Windows (x64) in Release configuration",
+      "command": "cmake -G \"Visual Studio 17 2022\" -A x64 -DJUCE_DIR=\"$JUCE_DIR\" -B build-win && cmake --build build-win --config Release",
+      "validation": "Check build-win/VST3/Release/*.vst3 exists",
+      "expected_output": "Plugin binary created successfully",
+      "on_failure": "stop",
+      "retry_count": 1,
+      "timeout_seconds": 600
+    },
+    {
+      "name": "Build macOS release",
+      "action": "Build plugin for macOS (Universal Binary) in Release configuration",
+      "command": "cmake -DJUCE_DIR=\"$JUCE_DIR\" -DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\" -B build-mac && cmake --build build-mac --config Release",
+      "validation": "Check build-mac/VST3/Release/*.vst3 exists and contains both architectures",
+      "expected_output": "Universal binary created",
+      "on_failure": "stop",
+      "retry_count": 1,
+      "timeout_seconds": 600,
+      "parallel": false
+    },
+    {
+      "name": "Build Linux release",
+      "action": "Build plugin for Linux (x64) in Release configuration",
+      "command": "cmake -DJUCE_DIR=\"$JUCE_DIR\" -B build-linux && cmake --build build-linux --config Release",
+      "validation": "Check build-linux/VST3/Release/*.vst3 exists",
+      "expected_output": "Plugin binary created",
+      "on_failure": "stop",
+      "retry_count": 1,
+      "timeout_seconds": 600,
+      "parallel": false
+    },
+    {
+      "name": "Sign binaries (if available)",
+      "action": "Code sign plugin binaries for Windows and macOS if signing certificates are available",
+      "command": "if [ -f ~/.ssh/codesign.key ]; then ./scripts/sign-plugins.sh; fi",
+      "validation": "Verify signatures on binaries",
+      "on_failure": "continue",
+      "timeout_seconds": 120
+    },
+    {
+      "name": "Run smoke tests",
+      "action": "Run basic smoke tests on built plugins to verify they load correctly",
+      "command": "./scripts/smoke-test-plugins.sh build-*/VST3/Release/*.vst3",
+      "validation": "All plugins load without errors",
+      "expected_output": "All smoke tests pass",
+      "on_failure": "stop",
+      "timeout_seconds": 300
+    },
+    {
+      "name": "Create release packages",
+      "action": "Package plugins with documentation for distribution",
+      "command": "./scripts/package-release.sh --version $(git describe --tags) --output releases/",
+      "validation": "Check releases/*.zip exist for each platform",
+      "expected_output": "Release packages created in releases/ directory",
+      "on_failure": "stop",
+      "timeout_seconds": 120
+    },
+    {
+      "name": "Generate release notes",
+      "action": "Extract release notes from CHANGELOG.md for this version",
+      "command": "awk '/^## v'$(git describe --tags)'$/,/^## v/ { if (!/^## v/ || NR==1) print }' CHANGELOG.md > releases/RELEASE_NOTES.md",
+      "validation": "Check releases/RELEASE_NOTES.md is not empty",
+      "on_failure": "continue",
+      "timeout_seconds": 10
+    },
+    {
+      "name": "Create GitHub release",
+      "action": "Create GitHub release with built artifacts",
+      "command": "gh release create $(git describe --tags) releases/*.zip --title 'Release '$(git describe --tags) --notes-file releases/RELEASE_NOTES.md",
+      "validation": "Verify release appears on GitHub",
+      "expected_output": "Release created successfully with all artifacts",
+      "on_failure": "escalate",
+      "timeout_seconds": 300
+    },
+    {
+      "name": "Update documentation site",
+      "action": "Deploy updated documentation to project website",
+      "command": "./scripts/deploy-docs.sh --version $(git describe --tags)",
+      "validation": "Check documentation site shows new version",
+      "on_failure": "continue",
+      "timeout_seconds": 180
+    }
+  ],
+  "rollback": {
+    "enabled": true,
+    "steps": [
+      {
+        "name": "Delete GitHub release",
+        "action": "Remove failed release from GitHub",
+        "command": "gh release delete $(git describe --tags) --yes"
+      },
+      {
+        "name": "Delete release tag",
+        "action": "Remove release tag from repository",
+        "command": "git tag -d $(git describe --tags) && git push origin :refs/tags/$(git describe --tags)"
+      },
+      {
+        "name": "Clean build artifacts",
+        "action": "Remove all build directories and release packages",
+        "command": "rm -rf build-* releases/"
+      },
+      {
+        "name": "Notify team of rollback",
+        "action": "Post to team channel that release was rolled back",
+        "command": "echo 'Release $(git describe --tags) rolled back' | slack-cli post #releases"
+      }
+    ]
+  },
+  "verification": {
+    "checks": [
+      {
+        "name": "GitHub release exists",
+        "method": "Check GitHub releases page",
+        "command": "gh release view $(git describe --tags)",
+        "expected": "Release with correct tag and all artifacts"
+      },
+      {
+        "name": "Artifacts downloadable",
+        "method": "Download release artifacts and verify integrity",
+        "command": "gh release download $(git describe --tags) --dir /tmp/verify",
+        "expected": "All platform packages download successfully"
+      },
+      {
+        "name": "Documentation updated",
+        "method": "Check documentation site shows new version",
+        "command": "curl -s https://docs.example.com/version.json | jq -r .version",
+        "expected": "Version matches release tag"
+      },
+      {
+        "name": "Plugins loadable",
+        "method": "Test that downloaded plugins load in DAW",
+        "command": "./scripts/test-downloaded-plugins.sh /tmp/verify/*.zip",
+        "expected": "All plugins load successfully"
+      }
+    ]
+  },
+  "notification": {
+    "on_start": ["slack:#releases", "email:releases@example.com"],
+    "on_success": ["slack:#releases", "slack:#general", "email:releases@example.com"],
+    "on_failure": ["slack:#releases", "slack:#incidents", "email:oncall@example.com"]
+  },
+  "escalation": {
+    "conditions": [
+      "GitHub release creation fails",
+      "Any build fails after retry",
+      "Smoke tests fail on any platform",
+      "Manual intervention required"
+    ],
+    "contacts": [
+      {
+        "role": "Release Engineer (Primary)",
+        "name": "Release Team",
+        "contact": "slack:#releases"
+      },
+      {
+        "role": "Engineering Lead",
+        "name": "CTO",
+        "contact": "slack:@cto, phone:555-0100"
+      }
+    ]
+  },
+  "metadata": {
+    "owner": "Release Engineering Team",
+    "created_at": "2025-11-09T10:00:00Z",
+    "updated_at": "2025-11-09T10:00:00Z",
+    "version": "1.0.0",
+    "tags": ["deployment", "release", "ci-cd", "automation"],
+    "related_runbook": ".ctocenter/templates/RUNBOOK.template.md",
+    "related_adr": "docs/adr/ADR-001-release-process.md"
+  },
+  "testing": {
+    "last_tested": "2025-11-09T09:00:00Z",
+    "test_environment": "CI staging environment with mock release tags",
+    "test_data": "Test projects with various plugin configurations"
+  }
+}
