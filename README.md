@@ -104,6 +104,8 @@ vst3-plugin-template/
 ├── README.md                # This file
 ├── .gitignore              # Git ignore rules
 ├── LICENSE                 # License file
+├── package.json            # Node.js dependencies for CTO Command Center
+├── tsconfig.json           # TypeScript configuration
 ├── include/                # Header files
 │   ├── PluginProcessor.h   # Main audio processor
 │   └── PluginEditor.h      # GUI editor
@@ -111,10 +113,31 @@ vst3-plugin-template/
 │   ├── PluginProcessor.cpp
 │   └── PluginEditor.cpp
 ├── docs/                   # Documentation
-│   └── DEVELOPMENT.md      # Development guide
+│   ├── DEVELOPMENT.md      # Development guide
+│   ├── REFERENCE.md        # API reference
+│   ├── USER_MANUAL.md      # User documentation
+│   └── cto/                # CTO Command Center documentation
+│       ├── QUICKSTART.md   # Quick start guide
+│       ├── USAGE.md        # Complete usage guide
+│       ├── ROLES.md        # Team responsibilities
+│       └── GLOSSARY.md     # Terminology reference
+├── .ctocenter/             # CTO Command Center - Operational Excellence
+│   ├── README.md           # Command Center overview
+│   ├── state/              # Repository state tracking
+│   ├── templates/          # Document templates (ADR, Runbook, etc.)
+│   ├── ai/                 # AI Hub for assisted operations
+│   ├── scripts/            # Automation scripts (TypeScript)
+│   ├── adrs/               # Architecture Decision Records
+│   ├── runbooks/           # Operational runbooks
+│   └── playbooks/          # Process playbooks
 └── .github/                # GitHub Actions
-    └── workflows/
-        └── build.yml       # CI/CD pipeline
+    ├── workflows/
+    │   ├── build.yml           # Build pipeline
+    │   ├── ctocenter-validate.yml   # Documentation validation
+    │   ├── ctocenter-weekly-drift.yml  # Weekly drift detection
+    │   └── ctocenter-release.yml    # Release automation
+    ├── PULL_REQUEST_TEMPLATE.md  # PR template
+    └── CODEOWNERS            # Code review assignments
 ```
 
 ## Development
@@ -204,6 +227,30 @@ Load your plugin in a DAW:
 ## CI/CD
 
 This template includes GitHub Actions for automated building on push/PR. See `.github/workflows/build.yml`.
+
+### CTO Command Center
+
+This repository includes a **CTO Command Center** for operational excellence:
+
+- 🔍 **Drift Detection**: Automatic detection of documentation misalignment
+- 📋 **Governance**: ADRs, runbooks, and playbooks for structured decision-making
+- 🤖 **AI Hub**: AI-assisted task and runbook generation
+- ✅ **Automated Validation**: CI checks for documentation and ADRs
+- 📊 **Release Automation**: Automated changelog and release notes
+
+**Quick start**:
+```bash
+# Install dependencies
+npm install
+
+# Run drift detection
+npm run ctocenter:scan
+
+# Read the guide
+cat docs/cto/QUICKSTART.md
+```
+
+**Full documentation**: [.ctocenter/README.md](.ctocenter/README.md) and [docs/cto/USAGE.md](docs/cto/USAGE.md)
 
 ## Resources
 
