@@ -1,0 +1,47 @@
+# CODEOWNERS
+# 
+# This file defines who is responsible for reviewing changes to specific parts of the codebase.
+# When a PR modifies files matching these patterns, the specified owners are automatically
+# requested for review.
+#
+# Syntax: path/pattern @username @team-name
+
+# Default owners for everything (unless more specific rule below)
+* @mrboyd78
+
+# Core plugin code
+/source/ @mrboyd78
+/include/ @mrboyd78
+
+# Build system
+/CMakeLists.txt @mrboyd78
+/.github/workflows/ @mrboyd78
+
+# Documentation
+/docs/ @mrboyd78
+/README.md @mrboyd78
+/QUICKSTART.md @mrboyd78
+
+# CTO Command Center - Operational Excellence
+/.ctocenter/ @mrboyd78
+
+# Governance documents require additional review
+/.ctocenter/adrs/ @mrboyd78
+/.ctocenter/templates/ @mrboyd78
+
+# AI Hub and prompts
+/.ctocenter/ai/ @mrboyd78
+
+# Critical automation scripts
+/.ctocenter/scripts/ @mrboyd78
+
+# State files should rarely be manually edited
+/.ctocenter/state/ @mrboyd78
+
+# Project configuration
+/package.json @mrboyd78
+/tsconfig.json @mrboyd78
+
+# Security-sensitive files
+/.github/workflows/*.yml @mrboyd78
+/CODEOWNERS @mrboyd78
