@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "generated_at": "2025-11-09T10:00:00Z",
+    "objective": "Add parameter validation to plugin to prevent crashes from invalid values",
+    "total_tasks": 4,
+    "total_estimated_hours": 10
+  },
+  "tasks": [
+    {
+      "id": "param-validation-001",
+      "title": "Add range validation for all parameter setters",
+      "description": "Implement validation logic in PluginProcessor to ensure all parameter values are within valid ranges before applying them. This prevents crashes or undefined behavior from out-of-range values that might come from corrupted presets or automation data.",
+      "priority": "P1",
+      "estimate": "S",
+      "estimated_hours": 3,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "All parameters clamp values to defined min/max ranges",
+        "Invalid values are logged with DBG() for debugging",
+        "No crashes occur with extreme or invalid parameter values",
+        "Unit tests verify validation for all parameters"
+      ],
+      "tags": ["parameters", "bugfix", "security", "audio"],
+      "notes": "Use juce::NormalisableRange::snapToLegalValue() for consistent validation. Add tests with intentionally invalid values."
+    },
+    {
+      "id": "param-validation-002",
+      "title": "Add null pointer checks in parameter access",
+      "description": "Add null pointer checks before dereferencing parameters retrieved from AudioProcessorValueTreeState. This prevents crashes when accessing parameters that may not exist in older preset versions.",
+      "priority": "P0",
+      "estimate": "S",
+      "estimated_hours": 2,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "All parameter access includes null check",
+        "Graceful fallback to default values on null",
+        "Crash reports show zero null pointer dereferences",
+        "Code review confirms all getRawParameterValue() calls are checked"
+      ],
+      "tags": ["parameters", "bugfix", "security"],
+      "notes": "Focus on processBlock() and setStateInformation() methods. Use smart pattern like auto* param = apvts.getRawParameterValue('id'); if (param != nullptr) { use(*param); }"
+    },
+    {
+      "id": "param-validation-003",
+      "title": "Add parameter value sanitization in setStateInformation",
+      "description": "Sanitize and validate parameter values when loading presets in setStateInformation(). Check for NaN, infinity, and out-of-range values before applying to parameters.",
+      "priority": "P1",
+      "estimate": "M",
+      "estimated_hours": 4,
+      "dependencies": ["param-validation-001", "param-validation-002"],
+      "acceptance_criteria": [
+        "Preset loading handles NaN and infinity values safely",
+        "Out-of-range values are clamped to valid range",
+        "User receives warning (once) if preset has invalid data",
+        "Plugin uses default values for invalid parameters",
+        "Test suite includes fuzzing with random preset data"
+      ],
+      "tags": ["parameters", "state-management", "bugfix"],
+      "notes": "Use std::isfinite() to check for NaN/infinity. Consider adding preset version check for future compatibility."
+    },
+    {
+      "id": "param-validation-004",
+      "title": "Update documentation with parameter validation approach",
+      "description": "Document the parameter validation strategy in REFERENCE.md and add usage examples to DEVELOPMENT.md. Include guidelines for developers adding new parameters.",
+      "priority": "P2",
+      "estimate": "XS",
+      "estimated_hours": 1,
+      "dependencies": ["param-validation-001", "param-validation-002", "param-validation-003"],
+      "acceptance_criteria": [
+        "REFERENCE.md explains parameter validation approach",
+        "DEVELOPMENT.md includes example of adding validated parameter",
+        "Documentation shows how to test parameter validation",
+        "Best practices section added for parameter safety"
+      ],
+      "tags": ["documentation", "parameters"],
+      "notes": "Include code snippets showing proper validation patterns. Reference JUCE best practices documentation."
+    }
+  ]
+}

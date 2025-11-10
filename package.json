@@ -1,0 +1,44 @@
+{
+  "name": "vst3-plugin-template-ctocenter",
+  "version": "1.0.0",
+  "description": "CTO Command Center for VST3 Plugin Template - Operational excellence tools",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "ctocenter:scan": "ts-node .ctocenter/scripts/docs-scan.ts",
+    "ctocenter:adr-validate": "ts-node .ctocenter/scripts/adr-validate.ts",
+    "ctocenter:changelog": "ts-node .ctocenter/scripts/changelog.ts",
+    "ctocenter:release-notes": "ts-node .ctocenter/scripts/release-notes.ts",
+    "ctocenter:toc-sync": "ts-node .ctocenter/scripts/toc-sync.ts",
+    "ctocenter:ci-summary": "ts-node .ctocenter/scripts/ci-summary.ts",
+    "ctocenter:validate-task": "ts-node -e \"require('ajv-cli/dist/commands/validate')\" -- -s .ctocenter/ai/schemas/task.spec.json -d",
+    "ctocenter:validate-automation": "ts-node -e \"require('ajv-cli/dist/commands/validate')\" -- -s .ctocenter/ai/schemas/automation.spec.json -d"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ajv": "^8.12.0",
+    "ajv-cli": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "cto",
+    "command-center",
+    "operational-excellence",
+    "documentation",
+    "governance",
+    "adr",
+    "runbook",
+    "playbook"
+  ],
+  "author": "VST3 Plugin Template Team",
+  "license": "MIT"
+}

@@ -1,0 +1,155 @@
+name: CTO Command Center - Validate
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.ctocenter/**'
+      - 'include/**'
+      - 'source/**'
+      - 'CMakeLists.txt'
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.ctocenter/**'
+
+jobs:
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run drift detection
+        id: drift
+        run: |
+          npm run ctocenter:scan || echo "drift_detected=true" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
+      - name: Comment drift report on PR
+        if: github.event_name == 'pull_request' && steps.drift.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const signals = JSON.parse(fs.readFileSync('.ctocenter/state/signals.json', 'utf8'));
+            
+            let comment = '## 📊 Documentation Drift Report\n\n';
+            comment += '⚠️ **Drift detected** - Please review and address:\n\n';
+            
+            if (signals.signals.documentation.issues.length > 0) {
+              comment += '### Documentation Issues\n';
+              signals.signals.documentation.issues.forEach(issue => {
+                comment += `- ${issue}\n`;
+              });
+              comment += '\n';
+            }
+            
+            if (signals.signals.api_changes.changes.length > 0) {
+              comment += '### API Changes\n';
+              signals.signals.api_changes.changes.forEach(change => {
+                comment += `- ${change}\n`;
+              });
+              comment += '\n';
+            }
+            
+            if (signals.recommendations.length > 0) {
+              comment += '### Recommendations\n';
+              signals.recommendations.forEach(rec => {
+                comment += `- **[${rec.priority.toUpperCase()}]** ${rec.message}\n`;
+                comment += `  → ${rec.action}\n`;
+              });
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Validate ADRs
+        run: npm run ctocenter:adr-validate
+      
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: drift-report
+          path: .ctocenter/state/signals.json
+
+  validate-structure:
+    name: Validate CTO Command Center Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check required directories exist
+        run: |
+          echo "Checking CTO Command Center structure..."
+          
+          REQUIRED_DIRS=(
+            ".ctocenter/state"
+            ".ctocenter/templates"
+            ".ctocenter/ai/prompts"
+            ".ctocenter/ai/schemas"
+            ".ctocenter/ai/examples"
+            ".ctocenter/scripts"
+          )
+          
+          for dir in "${REQUIRED_DIRS[@]}"; do
+            if [ ! -d "$dir" ]; then
+              echo "❌ Missing required directory: $dir"
+              exit 1
+            else
+              echo "✅ Found: $dir"
+            fi
+          done
+          
+          echo ""
+          echo "✅ All required directories present"
+      
+      - name: Check required files exist
+        run: |
+          echo "Checking required files..."
+          
+          REQUIRED_FILES=(
+            ".ctocenter/state/project-map.json"
+            ".ctocenter/state/signals.json"
+            ".ctocenter/templates/PLAYBOOK.template.md"
+            ".ctocenter/templates/RUNBOOK.template.md"
+            ".ctocenter/templates/ADR.template.md"
+            ".ctocenter/templates/POSTMORTEM.template.md"
+            ".ctocenter/ai/HUB.md"
+            ".ctocenter/ai/schemas/task.spec.json"
+            ".ctocenter/ai/schemas/automation.spec.json"
+          )
+          
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+          
+          echo ""
+          echo "✅ All required files present"

@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-11-10T14:55:36.469Z",
+  "drift_detected": true,
+  "signals": {
+    "documentation": {
+      "status": "aligned",
+      "last_check": "2025-11-10T14:55:36.469Z",
+      "issues": []
+    },
+    "api_changes": {
+      "status": "stable",
+      "last_check": "2025-11-10T14:55:36.469Z",
+      "changes": []
+    },
+    "dependencies": {
+      "status": "outdated",
+      "last_check": "2025-11-10T14:55:36.469Z",
+      "outdated": [
+        "CMakeLists.txt contains hardcoded JUCE_DIR path - should be configurable"
+      ]
+    },
+    "governance": {
+      "status": "active",
+      "last_check": "2025-11-10T14:55:36.469Z",
+      "missing_adrs": [
+        "No ADRs found - consider documenting architectural decisions"
+      ],
+      "missing_runbooks": [
+        "No runbooks found - consider creating operational procedures"
+      ],
+      "missing_playbooks": [
+        "No playbooks found - consider documenting processes"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "low",
+      "category": "governance",
+      "message": "No ADRs found",
+      "action": "Consider documenting architectural decisions using ADR templates"
+    }
+  ]
+}
