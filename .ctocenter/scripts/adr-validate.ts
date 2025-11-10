@@ -32,13 +32,14 @@ interface ADRMetadata {
 
 const VALID_STATUSES = ['Proposed', 'Accepted', 'Rejected', 'Deprecated', 'Superseded'];
 
-const STATUS_TRANSITIONS: Record<string, string[]> = {
-  'Proposed': ['Accepted', 'Rejected', 'Deprecated'],
-  'Accepted': ['Deprecated', 'Superseded'],
-  'Rejected': [], // Terminal state
-  'Deprecated': ['Superseded'], // Can be superseded after deprecation
-  'Superseded': [] // Terminal state
-};
+// Status transition validation - reserved for future enhancement
+// const STATUS_TRANSITIONS: Record<string, string[]> = {
+//   'Proposed': ['Accepted', 'Rejected', 'Deprecated'],
+//   'Accepted': ['Deprecated', 'Superseded'],
+//   'Rejected': [], // Terminal state
+//   'Deprecated': ['Superseded'], // Can be superseded after deprecation
+//   'Superseded': [] // Terminal state
+// };
 
 function extractADRMetadata(filePath: string, content: string): ADRMetadata | null {
   // Extract ADR number from filename (e.g., ADR-0001-title.md)
